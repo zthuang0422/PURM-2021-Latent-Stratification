@@ -1,0 +1,107 @@
+---
+title: "ls-vignette"
+output: pdf_document
+vignette: >
+  %\VignetteIndexEntry{ls-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+header-includes:
+    - \usepackage{setspace}\doublespacing
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(ls)
+```
+
+# 1. Verision 0.1.0 Overview
+- First version of the package
+- To install, devtools::install_github("eleafeit/latent_strat")
+- In future versions: upgrade code efficiency
+
+# 2. Introduction
+This package contains the necessary functions of the latent stratification model, which can be used in advertising experiments. 
+This vignette will explain the usage of these functions and provide interpretations to the output.  
+If you are unfamiliar with the concept, [Berman & Feit (2019)](https://arxiv.org/pdf/1911.08438.pdf) offers detailed descriptions for the latent stratification model. 
+
+# 3. Latent Stratification Model
+In advertising experiments, noisy responses complicates the estimation of average treatment effect (ATE) and the assessment of the return of interest (ROI). Therefore, running normal t-tests will often yield estimates with high variance. The latent stratification model divides the customers into three strata: always buyer, who are positive under treatment and control (A); influenced buyer, who are positive only under treatment (B), and never buyer, who are zero under treatment and control (C). The model assumes that defiers, who are positive only under control, does not exist. It is able to improve the precision of the estimate by lowering the variance of the estimate. At the same time, it is also able to improve the accuracy by yielding an ATE closer to the true value. 
+
+# 3.1 Data Preparation
+In order to demonstrate the package, we first simulate the data via the `sim_latent_strat()` function. The number following the strata (A for always buyer, B for influenced buyer, and C for never buyer) indicates whether the subject receives treatment. In this case, if the number is 1, then it means that the subject has received treatment, and 0 otherwise. The function takes in the sample size (n), proportion of always buyer (piA), proportion of influenced buyer (piB), mean of always buyer who received treatment (muA1), mean of always buyers who are in control, mean of the influenced buyer who received treatment, and the variance of group A1, A0, and B1. We assume that the treatment proportion is 50%. The `sim_latent_strat()` function generates a list containing a data frame `data`, the ATE `ATE`, and a vector `par`.
+```{r}
+set.seed(20030601)
+sim <- sim_latent_strat(n=10000, piA=0.2, piB=0.1, muA1=5, muA0=4.5, muB1=3, sigma=0.3)
+```
+
+The input parameters are stored as the `par` vector. The data will be simulated from these true parameters. For example, 20% of all observations belongs to strata A, who are positive under treatment and control. Observations in strata A who received treatment have a mean outcome of 5, and those who are in control have a mean outcome of 4.5, both with a variance of 0.3. 
+```{r}
+sim$par
+```
+
+The true ATE can be calculated from these true parameters. In this example, the true ATE is 0.4. 
+```{r}
+sim$ATE
+```
+
+Let's now examine the simulated data. 
+```{r}
+head(sim$data)
+```
+
+The data frame contains the 10000 randomly generated value (y) for each observation based on the strata (s; which can be A, always buyer; B, influenced buyer; or C, never buyer) and treatment (z; 1 for treatment, 0 for control). Since the treatment proportion is 50%, the first 5000 observations will have z = 1. For example, in the first entry, the subject belongs to strata B, who is an influenced buyer that only buys under treatment. Therefore, the subject in the first entry received treatment and has an outcome of 3.36. Following the same logic, the second entry is a subject in the never buyer strata. Therefore, even though he received treatment, his outcome is 0. 
+
+# 3.2 Estimating ATE Using t-Test
+One of the most popular and straight-forward ways of estimating the ATE is done by the `t.test()` function in base R. In the code below, we separate the outcome into two groups based on whether the observation has received treatment (z=1, or not z=0), then carry out a t-test with the null hypothesis that the difference in means is zero. 
+```{r}
+data = sim$data
+ttest = t.test(data$y[data$z==1], data$y[data$z==0])
+ttest
+```
+
+The difference in mean of the two groups can be found by subtracting mean of x and mean of y, which is 1.319 - 0.880 = 0.439. The confidence interval is (0.364, 0.516). With the p-value being less than 2.2e-16, the null hypothesis can be rejected. 
+
+
+Although the standard output shows the accuracy of ATE, it doesn't have information about its precision. So call `stderr` of the t-test object. We can also compute the standard error from the confidence interval: divide half of the difference between the upper and the lower bound by 1.96. As shown below, the standard error of the mean is 0.0387. 
+```{r}
+ttest$stderr
+```
+
+# 3.3 Estimating ATE Using Latent Stratification
+The alternative method described in [Berman & Feit (2019)](https://arxiv.org/pdf/1911.08438.pdf) is to use the latent stratification model of this package. We simply call the `mle_ls()` function and input the data frame as a parameter. 
+```{r}
+test = mle_ls(sim$data)
+test$pars
+```
+
+
+The function returned the analysis result as a data frame. It includes the estimates and standard errors of ATE, strata proportions, strata outcome means, and variance. The latent stratification model provides a more accurate estimate of the ATE. This can be seen by ATE estimate of 0.403, compared to 0.439 in the t-test. In addition, the estimate is also more precise. The standard error of the estimate under the latent stratification model is 0.013, about 66% smaller than that under the t-test (0.039). 
+
+# 3.4 Estimating ATE Using the Oracle Model
+By the way, if we actually know the strata, we can compute ATE with the `ATEo()` function, which will produce an even better response. As shown below, the ATE is 0.4030, even smaller than the 0.4032 ATE estimated using the latent stratification model. 
+```{r}
+ATEo(data)
+```
+
+# 4.1 Helper Function
+This package is designed such that the only function that basic users need is the mle_ls() function. However, the `mle_ls()` function incorporates many helper functions that can be useful to high-end users. The most notable is the `ls_vcv()` function that is used to calculate the variance co-variance matrix. 
+
+# 4.2 Variance-Covariance Matrix
+In the mle optimization, the `ls_vcv()` function is used in another function called `varATEdelta()`, which estimates the standard error of the output via the delta method as stated in White (1982). Aside from this use, you can also use the variance-covariance matrix from the `ls_vcv()` function to find the correlation between parameters. All you need to do is to plug the variance-covariance matrix to the `cov2cor()` function in base R. 
+```{r}
+vcv = ls_vcv(sim$par, sim$data, "hessian")
+cov2cor(vcv)
+```
+
+The correlation matrix follows the same order as that of the `par` vector. Let's see the order of `par` again. 
+```{r}
+sim$par
+```
+
+So for example, the [1,2] entry of the matrix means that the correlation between piA and piB is -0.119. Like the hessian matrix, the correlation matrix is also symmetrical. The diagonal of the correlation matrix will always be 1 since the correlation between a variable and itself is 1. 
