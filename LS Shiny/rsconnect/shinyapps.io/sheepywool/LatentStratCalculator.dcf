@@ -5,9 +5,10 @@ account: sheepywool
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4437312
-bundleId: 4872847
+bundleId: 5302495
 url: https://zthuang0422.shinyapps.io/LatentStratCalculator/
-when: 1627665449.63126
-lastSyncTime: 1627665449.63126
+when: 1638132965.49959
+lastSyncTime: 1638132965.49959
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: .RData|ls-sample-data.csv

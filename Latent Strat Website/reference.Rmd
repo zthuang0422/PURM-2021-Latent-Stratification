@@ -1,0 +1,215 @@
+---
+title: "LS Reference"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## ATEd
+**Description** <br>
+Difference in means estimate of the ATE <br>
+**Usage** <br>
+ATEd(data) <br>
+**Arguments** <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment). <br>
+**Details** <br>
+t.test() can be used as an alternative. <br>
+**Value** <br>
+difference in means estimate of the ATE <br>
+
+## ATEo
+**Description** <br>
+Oracle model estimate of the ATE <br>
+**Usage** <br>
+ATEo(data) <br>
+**Arguments** <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment).
+Need to include s as well. <br>
+**Details** <br>
+This serves as a benchmark result under the ideal scenario where all strata are known. Often used 
+to compare with other analysis results. <br>
+**Value** <br>
+oracle estimate of ATE <br>
+
+## bounds_ls
+**Description** <br>
+Computes parameter bounds to be used in L-BFGS-B mle optimization. <br>
+**Usage** <br>
+bounds_ls(data) <br>
+**Arguments** <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment). <br>
+**Details** <br>
+Each strata much have at least three observations. <br>
+**Value** <br>
+The maximum and lowest possible values for segment proportions, mean, and variance. <br>
+
+## gr_ll_ls 
+**Description** <br>
+Computes the first order partial derivative of the log-likelihood for the latent stratification model, 
+with respect to every variable in the vector par. <br>
+**Usage** <br>
+gr_ll_ls(par, data, trans = FALSE) <br>
+**Arguments** <br>
+par: vector c(piA, piB, muA1, muA0, muB1, sigma), c(piA, piB/(1-piA), muA1,
+muA0, muB1, sigma) if trans=TRUE. <br>
+data: data frame containing columns y (positive outcome with zeros) and z (treatment). <br>
+trans: boolean signifying if piB has been transformed. <br>
+**Details** <br>
+Sometimes piB is transformed to relative proportions from absolute proportions. This transformation
+allows the reparameterization of the piA and piB to allow constraint bounds between 0 and 1
+in the optimization procedure. <br>
+The output vector is named, each representing the gradient taken with respect to that variable in the
+parameter. <br>
+**Value** <br>
+Gradient of the log-likilihood for the latent stratification model as a named vector. <br>
+
+## hes_ll_ls 
+**Description** <br>
+Computes the second order partial derivative with respect to each of the par variables, resulting in
+a Hessian matrix. <br>
+**Usage** <br>
+hes_ll_ls(par, data, trans = FALSE) <br>
+**Arguments** <br>
+par: vector c(piA, piB, muA1, muA0, muB1, sigma), c(piA, piB/(1-piA), muA1,
+muA0, muB1, sigma) if trans=TRUE. <br>
+data: data frame containing columns y (positive outcome with zeros) and z (treatment). <br>
+trans: boolean signifying if piB has been transformed. <br>
+**Details** <br>
+Sometimes piB is transformed to relative proportions from absolute proportions. This transformation
+allows the reparameterization of the piA and piB to allow constraint bounds between 0 and 1
+in the optimization procedure. <br>
+The returned Hessian is the second order derivative with respect to θ where θ is in the order (piA,
+piB, muA1, muA0, muB1, sigma). <br>
+**Value** <br>
+Hessian matrix for the latent stratification model. <br>
+
+## ll_ls
+**Description** <br>
+Computes the log-likelihood for each of the four observational groups under the assumption of three
+strata and common variance. <br>
+**Usage** <br>
+ll_ls(par, data, trans = FALSE) <br>
+**Arguments** <br>
+par: vector c(piA, piB, muA1, muA0, muB1, sigma), c(piA, piB/(1-piA), muA1,
+muA0, muB1, sigma) if trans=TRUE. <br>
+data: data frame containing columns y (positive outcome with zeros) and z (treatment).
+trans: boolean signifying if piB has been transformed. <br>
+**Details** <br>
+Sometimes piB is transformed to relative proportions from absolute proportions. This transformation
+allows the reparameterization of the piA and piB to allow constraint bounds between 0 and 1
+in the optimization procedure. <br>
+The log likelihoods are calculated based on equation 11-14 in the paper. Note that the equations
+presented in the paper are for normal likelihood and for a single individual, thus corresponding
+adjustments have been made in the code to calculate the log likelihood for the group. <br>
+**Value** <br>
+Log-likelihood for the latent stratification model. <br>
+
+## ls_vcv
+**Description** <br>
+Variance-Covariance Matrix <br>
+**Usage** <br>
+ls_vcv(par, data, method) <br>
+**Arguments** <br>
+par: vector c(piA, piB, muA1, muA0, muB1, sigma). <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment). <br>
+method method used for computation: score, hessian, robust, and bootstrap. <br>
+**Details** <br>
+Computes the variance-covariance matrix: <br>
+if method = "hessian" then the standard errors are computed by the numeric hessian <br>
+if method = "score" then standard errors are computed from the gradient <br>
+if method = "robust" then white robust standard errors are computed <br>
+if method = "bootstrap" then the standard errors are computed by bootstrap <br>
+**Value** <br>
+the variance-covariance matrix based on the specified method. <br>
+
+## mle_ls
+**Description** <br>
+Computes the maximum likelihood estimate for the latent stratification model, optionally takes
+starting values in original parameter space. <br>
+**Usage** <br>
+mle_ls(data, start = NULL, starts = 1, vcv = "hessian", quiet = FALSE) <br>
+**Arguments** <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment). <br>
+start: vector starting values for parameters c(piA, piB, muA1, muA0, muB1, sigma). <br>
+starts: number of starting values. <br>
+vcv: the variance-covariance matrix of the data, can be calculated using ls_vcv(). <br>
+quiet: boolean controlling if the computation time should be printed after execution. <br>
+**Details** <br>
+If starts=1, then the optimization is run once from the starting values. If starts>1, then mle optimization
+is done with multiple starting values, which are generated near the starting values. <br>
+The output is an ls model object, which can be called using summary() to show the ATE parameters, 
+their standard errors, and the maximum likelihood. To access the variance-covariance matrix, use
+object$vcv. <br>
+**Value** <br>
+object containing the MLE results. <br>
+
+## sim_latent_strat
+**Description** <br>
+Simulates the data from the latent stratification model with three strata. <br>
+**Usage** <br>
+sim_latent_strat(
+n = 1e+05,
+p = 0.5,
+piA = 0.05,
+piB = 0.1,
+muA1 = 5,
+muA0 = 4,
+muB1 = 5,
+sigma = 1
+) <br>
+**Arguments** <br>
+n: total sample size, the default value is 100000. <br>
+p: treatment proportions, the default value is 0.5. <br>
+piA: proportion of strata A, the default value is 0.05. <br>
+piB: proportion of strata B, the default value is 0.10. <br>
+muA1: mean for strata A that received treatment, Z = 1, the default is 5. <br>
+muA0: mean for strata A that did not received treatment, Z = 0, the default value is 4. <br>
+muB1: mean for strata B that received treatment, Z = 1, the default value is 5. <br>
+sigma: variance for strata. <br>
+**Details** <br>
+The three strata are defined as: <br>
+A = positive under treatment and control. <br>
+B = positive under treatment only. <br>
+C = never positive. <br>
+The model assumes that strata D, which are those who are positive under control only, does not
+exist. The model also assumes that all strata have the same variance. <br>
+**Value** <br>
+A list containing a data frame, a numeric value, and two vectors. <br>
+The data frame data contains the outcome variable y, treatment dummy z, strata, and the mean-centered
+effects coded dummies for strata. <br>
+The numeric value ATE is the true average treatment effect. <br>
+The vector par consists of the true parameters of the simulated data. <br>
+
+## start_ls
+**Description** <br>
+Computes the starting values for proportion, mean, and variance for optimization. The proportions
+pi are transformed to relative sizes. <br>
+**Usage** <br>
+start_ls(data, rand = FALSE) <br>
+**Arguments** <br>
+data: data frame containing cols y (positive outcome with zeros) and z (treatment). <br>
+rand: boolean controlling whether random adjusted starting mean values are produced. <br>
+**Details** <br>
+By allowing rand=TRUE, the optim() in mle_ls() can be started in multiple places, providing random
+adj values while remaining within reasonable bounds. <br>
+**Value** <br>
+starting values used for maximum-likelihood optimization. <br>
+
+## varATEldelta 
+**Description** <br>
+Estimates the standard error and the exponential of the standard error of ATE via the delta method. <br>
+**Usage** <br>
+varATEldelta(par, vcv) <br>
+**Arguments** <br>
+par: vector c(piA, piB, muA1, muA0, muB1, sigma). <br>
+vcv: variance-covariance matrix of the parameters, can be calculated using ls_vcv(). <br>
+**etails** <br>
+The delta method estimates the variance by expanding the function of a random variable through
+Taylor approximation, which can be expanded to vectorized calculations. For a more detailed explanation,
+see https://www.stata.com/support/faqs/statistics/delta-method/. <br>
+**Value** <br>
+standard error of the average treatment effect. <br>

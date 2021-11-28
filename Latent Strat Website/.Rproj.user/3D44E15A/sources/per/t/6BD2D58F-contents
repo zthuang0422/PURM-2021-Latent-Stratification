@@ -1,0 +1,16 @@
+name: "Latent Strat Website"
+title: "Latent Stratification in Advertising Experiements"
+description: |
+  My Website
+output_dir: "_site"
+navbar:
+  right:
+    - text: "Home"
+      href: index.html
+    - text: "Reference"
+      href: reference.html
+    - text: "Vignette"
+      href: vignette.html
+    - text: "Calculator"
+      href: shiny.html
+output: distill::distill_article

@@ -1,0 +1,24 @@
+---
+title: "LS Calculator"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+```
+
+<iframe width="100%" height="1400px" src="http://zthuang0422.shinyapps.io/LatentStratCalculator" title="Shinyapps.io iframe demo"></iframe>
+
+
+
+```{r, echo = FALSE}
+# shinyAppDir(
+#   "C:/Users/Tom/Desktop/PURM 2021/LS Shiny",
+#   options = list(width = "100%", height = 700)
+# )
+
+#<iframe width="100%" height="150px" src="http://zthuang0422.shinyapps.io/LatentStratCalculator" title="Shinyapps.io iframe demo"></iframe>
+
+# knitr::include_app(url = "https://zthuang0422.shinyapps.io/LatentStratCalculator/")
+```

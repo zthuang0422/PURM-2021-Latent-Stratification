@@ -2,6 +2,7 @@ library(shiny)
 library(magrittr)
 library(ggplot2)
 library(ls)
+library(gridExtra)
 
 ui = fluidPage(
   titlePanel("Latent Stratification Calculator"),
@@ -11,6 +12,9 @@ ui = fluidPage(
   tags$a(href="https://www.ron-berman.com/", "Ron Berman"), 
   "and",
   tags$a(href="https://www.lebow.drexel.edu/people/eleafeit", "Elea McDonnell Feit"),
+  br(),
+  "Citation (APA): Berman, R., & Feit, E. M. (2019). Principal stratification for advertising experiments. 
+   The Wharton School Research Paper, Wharton Customer Analytics Initiative Research Paper.",
   br(),
   "Developed by Zhen Huang",
   
@@ -36,16 +40,16 @@ ui = fluidPage(
                )
              ),
              tags$h2("Instructions"),
-             "To use the calculator, upload a csv or excel file containing an outcome column named y and a
+             tags$h4("1. To use the calculator, upload a csv or excel file containing an outcome column named y and a
              treatment column named z. The treatment column z must only consist of 0 and 1 (1 = received treatment, 
-             0 = no treatment).",
-             br(),
-             "To see an example of the data that is accepted by the calculator, click the Download button.",
-             br(),
-             "After uploading the file, click the Analyze button to view the ATE estimates.",
-             br(),
-             "To see an example of the analysis, download and upload the sample data to the 
-             calculator, then click the Analyze button."
+             0 = no treatment)."),
+             # br(),
+             tags$h4("2. To see an example of the data that is accepted by the calculator, click the Download button."),
+             # br(),
+             tags$h4("3. After uploading the file, click the Analyze button to view the ATE estimates."),
+             # br(),
+             tags$h4("4. To see an example of the analysis, download and upload the sample data to the 
+             calculator, then click the Analyze button.")
     ),
     tabPanel("Results",
              fluidRow(
@@ -109,26 +113,38 @@ server = function(input, output, session) {
     mleATE = mlePars()[1, 2]
     mleSE = mlePars()[1, 3]
     mleCI = c(mleATE - 1.96 * mleSE, mleATE + 1.96 * mleSE)
-    mle.result = c("Latent Stratification", round(c(mleATE, mleSE, mleCI),3))
+    mlepValue = 2*pnorm(q=mleATE / mleSE, lower.tail=FALSE)
+    mle.result = c("Latent Stratification", round(c(mleATE, mleSE, mleCI, mlepValue),3))
+    
     
     ttestATE = unname(ttest()$estimate[1] - ttest()$estimate[2])
     ttestSE = ttest()$stderr
     ttestCI = ttest()$conf.int[1:2]
-    ttest.result = c("Diff in Means t-test", round(c(ttestATE, ttestSE, ttestCI),3))
+    ttestpValue = 2*pnorm(q=ttestATE / ttestSE, lower.tail=FALSE)
+    ttest.result = c("Diff in Means t-test", round(c(ttestATE, ttestSE, ttestCI, ttestpValue),3))
+    # add t test p value
     
     df = data.frame(t(cbind(ttest.result, mle.result))) %>%
-      dplyr::rename(Method=X1, ATE=X2, SE=X3, Lower=X4, Upper=X5)
+      dplyr::rename(Method=X1, ATE=X2, SE=X3, "95% CI Lower"=X4, "95% CI Upper"=X5, "p-value"=X6)
   })
   
   CIgraph = reactive({
     ggplot(testPars(), aes(x = Method, y = as.numeric(ATE))) +
       geom_point(size = 4) +
-      geom_errorbar(aes(ymin=as.numeric(Lower), ymax=as.numeric(Upper))) +
-      ylab("ATE Estimate Value") + xlab("Method to Estimate ATE")
+      geom_errorbar(aes(ymin=as.numeric(testPars()[,4]), ymax=as.numeric(testPars()[,5])), width = 0.3) +
+      ylab("ATE Estimate Value") + xlab("Method to Estimate ATE") + coord_fixed(ratio=8) +
+      theme(axis.text=element_text(size=15), axis.title=element_text(size=20,face="bold")) +
+      ylim(as.numeric(testPars()[1,2]) - as.numeric(testPars()[1,3])*3, 
+           as.numeric(testPars()[1,2]) + as.numeric(testPars()[1,3])*3)
   })
   
+  
   mleExtra = reactive({
-    mlePars()[-1,]
+    table = mlePars()[-1,]
+    table["par"] = c("Exponential ATE", "Proportion of always buyer", "Proportion of influenced buyer",
+    "mean of always buyer under treatment", "mean of always buyer under control", 
+    "mean of influenced buyer under treatment", "sigma")
+    table
   })
   ##########################################################################################
   

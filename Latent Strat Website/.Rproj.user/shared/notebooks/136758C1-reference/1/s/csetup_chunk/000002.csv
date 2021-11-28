@@ -1,0 +1,16 @@
+"0","library(roxygen2)"
+"2","Warning messages:
+"
+"2","1: "
+"2","In readLines(index, encoding = encoding) :"
+"2","
+ "
+"2"," incomplete final line found on 'C:/Users/Tom/Desktop/Latent Strat Website/index.Rmd'
+"
+"2","2: "
+"2","In readLines(index, encoding = encoding) :"
+"2","
+ "
+"2"," incomplete final line found on 'C:/Users/Tom/Desktop/Latent Strat Website/index.Rmd'
+"
+"0","knitr::opts_chunk$set(echo = FALSE)"
